@@ -1,17 +1,5 @@
 'use client';
 
-// Petra Wallet type declaration
-declare global {
-  interface Window {
-    aptos?: {
-      connect: () => Promise<{ address: string; publicKey: string }>;
-      disconnect: () => Promise<void>;
-      isConnected: () => Promise<boolean>;
-      account: () => Promise<{ address: string; publicKey: string }>;
-    };
-  }
-}
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,51 +8,11 @@ import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import signinBg from "@/assets/signin-bg.jpg";
-import { useToast } from "@/hooks/use-toast";
+import { useWallet } from "../wallet-provider";
 
 export default function SignIn() {
   const [activeTab, setActiveTab] = useState<"photon" | "wallet">("photon");
-  const [isConnecting, setIsConnecting] = useState(false);
-  const [walletAddress, setWalletAddress] = useState<string | null>(null);
-  const { toast } = useToast();
-
-  const connectPetraWallet = async () => {
-    setIsConnecting(true);
-    try {
-      // Check if Petra wallet is installed
-      if (!window.aptos) {
-        toast({
-          title: "Petra Wallet Not Found",
-          description: "Please install Petra Wallet extension to continue.",
-          variant: "destructive",
-        });
-        // Open Petra installation page
-        window.open("https://petra.app/", "_blank");
-        setIsConnecting(false);
-        return;
-      }
-
-      // Request connection to Petra wallet
-      const response = await window.aptos.connect();
-      
-      if (response.address) {
-        setWalletAddress(response.address);
-        toast({
-          title: "Wallet Connected!",
-          description: `Connected to ${response.address.slice(0, 6)}...${response.address.slice(-4)}`,
-        });
-      }
-    } catch (error: any) {
-      console.error("Error connecting to Petra wallet:", error);
-      toast({
-        title: "Connection Failed",
-        description: error.message || "Failed to connect to Petra wallet. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsConnecting(false);
-    }
-  };
+  const { walletAddress, isConnecting, connectWallet } = useWallet();
 
   return (
     <div 
@@ -167,21 +115,6 @@ export default function SignIn() {
                   >
                     Login with Photon
                   </Button>
-
-                  <div className="text-center text-sm text-muted-foreground my-4">
-                    Or connect your wallet
-                  </div>
-
-                  <button
-                    onClick={connectPetraWallet}
-                    disabled={isConnecting || !!walletAddress}
-                    className="w-full py-3 px-4 font-medium text-background rounded-md border-2 border-border shadow-sm hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
-                    style={{
-                      background: "linear-gradient(135deg, #8b5cf6 0%, #3b82f6 100%)",
-                    }}
-                  >
-                    {isConnecting ? "Connecting..." : walletAddress ? `Connected: ${walletAddress.slice(0, 6)}...${walletAddress.slice(-4)}` : "Connect Petra Wallet"}
-                  </button>
                 </div>
               )}
 
@@ -193,7 +126,7 @@ export default function SignIn() {
                   </p>
 
                   <button
-                    onClick={connectPetraWallet}
+                    onClick={connectWallet}
                     disabled={isConnecting || !!walletAddress}
                     className="w-full py-3 px-4 font-medium text-background rounded-md border-2 border-border shadow-sm hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
                     style={{
@@ -203,12 +136,15 @@ export default function SignIn() {
                     {isConnecting ? "Connecting..." : walletAddress ? `Connected: ${walletAddress.slice(0, 6)}...${walletAddress.slice(-4)}` : "Connect Petra Wallet"}
                   </button>
 
-                  <Button 
-                    className="w-full border-2 shadow-sm"
-                    size="lg"
-                  >
-                    Continue to Dashboard
-                  </Button>
+                  {walletAddress && (
+                    <Button 
+                      className="w-full border-2 shadow-sm"
+                      size="lg"
+                      asChild
+                    >
+                      <Link href="/dashboard">Continue to Dashboard</Link>
+                    </Button>
+                  )}
 
                   <p className="text-xs text-muted-foreground text-center mt-4">
                     New to Web3? No problem! Photon login requires no wallet setup.
