@@ -1,0 +1,20 @@
+// backend/config/aptos.js
+const { AptosClient, AptosAccount, HexString } = require("aptos");
+require("dotenv").config();
+
+const NODE = process.env.APTOS_NODE || "https://fullnode.testnet.aptoslabs.com";
+const client = new AptosClient(NODE);
+
+let deployer = null;
+
+// must be hex string private key
+if (process.env.DEPLOYER_PRIVATE_KEY) {
+  const privateKeyHex = process.env.DEPLOYER_PRIVATE_KEY.replace("0x", "");
+  const bytes = HexString.ensure(privateKeyHex).toU8Array();
+  deployer = new AptosAccount(bytes);
+} else {
+  console.warn("⚠️ DEPLOYER_PRIVATE_KEY missing in .env — Launchpad will not work");
+}
+
+module.exports = { client, deployer };
+
