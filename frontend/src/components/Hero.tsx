@@ -5,6 +5,7 @@ import { ArrowRight } from "lucide-react";
 import heroWorkflow from "@/assets/hero-workflow.jpg";
 import heroBg from "@/assets/hero-bg.jpg";
 import Image from "next/image";
+import Link from "next/link";
 
 export const Hero = () => {
   return (
@@ -42,9 +43,12 @@ export const Hero = () => {
               <Button 
                 size="lg" 
                 className="border-2 shadow-lg text-lg px-8 group"
+                asChild
               >
-                Get Started
-                <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
+                <Link href="/signin">
+                  Get Started
+                  <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
+                </Link>
               </Button>
               <Button 
                 size="lg" 
