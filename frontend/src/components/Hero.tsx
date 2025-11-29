@@ -1,5 +1,3 @@
-'use client';
-
 import { Button } from "@/components/ui/button";
 import { ArrowRight } from "lucide-react";
 import heroWorkflow from "@/assets/hero-workflow.jpg";
@@ -36,7 +34,7 @@ export const Hero = () => {
             
             <p className="text-lg md:text-xl text-muted-foreground max-w-xl">
               Complete DeFi infrastructure: passwordless onboarding, automated vaults, 
-              fair launches, and swap/staking. Anti-whale protection & liquidity lock built in.
+              fair launches, and swap/staking. Liquidity lock built in.
             </p>
 
             <div className="flex flex-col sm:flex-row gap-4">
@@ -62,10 +60,6 @@ export const Hero = () => {
             <div className="flex items-center gap-6 pt-4 text-sm font-mono">
               <div className="flex items-center gap-2">
                 <div className="w-2 h-2 rounded-full bg-green-500" />
-                <span>Anti-whale</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="w-2 h-2 rounded-full bg-green-500" />
                 <span>Liquidity lock</span>
               </div>
               <div className="flex items-center gap-2">
@@ -80,9 +74,8 @@ export const Hero = () => {
             <div className="relative border-2 border-border bg-background/90 backdrop-blur-sm p-8 shadow-2xl">
               <Image 
                 src={heroWorkflow} 
-                alt="zeroG workflow: Photon Integration → Automated Vault → Fair Token Launch → Swap/Staking"
+                alt="ZeroG workflow: Photon Integration → Automated Vault → Fair Token Launch → Swap/Staking"
                 className="w-full h-auto"
-                priority
               />
             </div>
             {/* Decorative elements */}

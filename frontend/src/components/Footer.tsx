@@ -7,7 +7,7 @@ export const Footer = () => {
         <div className="grid md:grid-cols-3 gap-8">
           {/* Brand */}
           <div>
-            <div className="text-2xl font-bold mb-4">zeroG</div>
+            <div className="text-2xl font-bold mb-4">ZeroG</div>
             <p className="text-sm text-muted-foreground">
               Fair, secure, and simple DeFi infrastructure for everyone.
             </p>
@@ -74,7 +74,7 @@ export const Footer = () => {
         </div>
 
         <div className="mt-12 pt-8 border-t-2 border-border text-center text-sm text-muted-foreground">
-          <p>© {new Date().getFullYear()} zeroG. Built with trust and transparency.</p>
+          <p>© {new Date().getFullYear()} ZeroG. Built with trust and transparency.</p>
         </div>
       </div>
     </footer>
