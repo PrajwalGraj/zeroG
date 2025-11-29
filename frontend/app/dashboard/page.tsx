@@ -2,11 +2,11 @@
 
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { useWallet } from "../wallet-provider";
+import { useWalletContext } from "../wallet-provider";
 import signinBg from "@/assets/signin-bg.jpg";
 
 export default function Dashboard() {
-  const { walletAddress, username, aptBalance, connectWallet, disconnectWallet, fetchAptBalance } = useWallet();
+  const { walletAddress, username, aptBalance, connectWallet, disconnectWallet, fetchAptBalance } = useWalletContext();
 
   return (
     <div 
@@ -18,7 +18,7 @@ export default function Dashboard() {
         <div className="container mx-auto flex items-center justify-between px-6 py-4">
           {/* Logo */}
           <Link href="/" className="text-2xl font-bold tracking-tight">
-            zeroG
+            ZeroG
           </Link>
 
           {/* Center Navigation Buttons */}
@@ -45,7 +45,7 @@ export default function Dashboard() {
                     variant="ghost"
                     size="sm"
                     className="h-6 w-6 p-0"
-                    onClick={fetchAptBalance}
+                    onClick={() => fetchAptBalance()}
                     title="Refresh balance"
                   >
                     ↻
@@ -54,7 +54,7 @@ export default function Dashboard() {
 
                 {/* Wallet Address (Display Only) */}
                 <div className="px-4 py-2 border-2 border-border bg-background font-mono text-sm">
-                  {walletAddress.slice(0, 6)}...{walletAddress.slice(-4)}
+                  {String(walletAddress).slice(0, 6)}...{String(walletAddress).slice(-4)}
                 </div>
 
                 {/* Disconnect Button */}
@@ -88,7 +88,7 @@ export default function Dashboard() {
             {/* Welcome Section */}
             <div className="border-4 border-border bg-background/90 backdrop-blur-sm p-8 shadow-lg relative">
               <h1 className="text-4xl font-bold mb-2">
-                Welcome {username || (walletAddress ? `${walletAddress.slice(0, 6)}...${walletAddress.slice(-4)}` : 'Guest')}!
+                Welcome {username || (walletAddress ? `${String(walletAddress).slice(0, 6)}...${String(walletAddress).slice(-4)}` : 'Guest')}!
               </h1>
               <p className="text-muted-foreground">
                 Manage your DeFi portfolio with ease

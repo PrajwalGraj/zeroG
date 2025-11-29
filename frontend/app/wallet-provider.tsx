@@ -2,19 +2,17 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
+import { PetraWallet } from 'petra-plugin-wallet-adapter';
+import { 
+  AptosWalletAdapterProvider, 
+  useWallet as useAptosWallet 
+} from '@aptos-labs/wallet-adapter-react';
+// 1. Updated Import: Added ClientConfig
+import { Aptos, AptosConfig, Network, ClientConfig } from "@aptos-labs/ts-sdk";
 
-// Petra Wallet type declaration
-declare global {
-  interface Window {
-    aptos?: {
-      connect: () => Promise<{ address: string; publicKey: string }>;
-      disconnect: () => Promise<void>;
-      isConnected: () => Promise<boolean>;
-      account: () => Promise<{ address: string; publicKey: string }>;
-      network: () => Promise<string>;
-    };
-  }
-}
+// 2. 🔑 PASTE YOUR GEOMI/APTOS API KEY HERE
+// Replace this string with the key you copied (e.g., "aptos_testnet_...")
+const APTOS_API_KEY = "AG-FA7RJFEHAYCUYF84ANRRVSFEE5TGTB7ZV"; 
 
 interface WalletContextType {
   walletAddress: string | null;
@@ -28,194 +26,83 @@ interface WalletContextType {
 
 const WalletContext = createContext<WalletContextType | undefined>(undefined);
 
-export function WalletProvider({ children }: { children: React.ReactNode }) {
-  const [walletAddress, setWalletAddress] = useState<string | null>(null);
+function WalletProviderContent({ children }: { children: React.ReactNode }) {
+  const { account, connected, connect, disconnect, network } = useAptosWallet();
   const [username, setUsername] = useState<string | null>(null);
-  const [aptBalance, setAptBalance] = useState<string>("0");
+  const [aptBalance, setAptBalance] = useState<string>("0.00");
   const [isConnecting, setIsConnecting] = useState(false);
   const { toast } = useToast();
 
-  const fetchAptBalance = async (address?: string) => {
-    const targetAddress = address || walletAddress;
-    if (!targetAddress) {
-      console.log("Cannot fetch balance: walletAddress not available");
-      return;
-    }
+  // 3. Updated Client Generator to use the API Key
+  const getAptosClient = () => {
+    const currentNetwork = network?.name?.toLowerCase() === 'mainnet' 
+      ? Network.MAINNET 
+      : Network.TESTNET;
+
+    // Define the client config with your key
+    const clientConfig: ClientConfig = {
+      API_KEY: APTOS_API_KEY,
+    };
+
+    // Pass clientConfig into the AptosConfig
+    return new Aptos(new AptosConfig({ 
+      network: currentNetwork,
+      clientConfig: clientConfig 
+    }));
+  };
+
+  const fetchAptBalance = async () => {
+    if (!account?.address) return;
 
     try {
-      console.log("=== FETCHING APT BALANCE ===");
-      console.log("Address:", targetAddress);
+      const aptos = getAptosClient(); // Uses the key now!
       
-      // Try testnet first (since user has balance there)
-      const networks = [
-        { name: 'testnet', url: 'https://fullnode.testnet.aptoslabs.com/v1' }
-      ];
+      const addressString = String(account.address);
       
-      for (const network of networks) {
-        try {
-          console.log(`\n--- Trying ${network.name} ---`);
-          
-          // Try getting account info first to check if account exists
-          const accountUrl = `${network.url}/accounts/${targetAddress}`;
-          console.log("Checking if account exists:", accountUrl);
-          
-          const accountResponse = await fetch(accountUrl);
-          if (accountResponse.ok) {
-            const accountData = await accountResponse.json();
-            console.log("Account data:", accountData);
-            
-            // Try to get CoinStore resource
-            const url = `${network.url}/accounts/${targetAddress}/resource/0x1::coin::CoinStore<0x1::aptos_coin::AptosCoin>`;
-            console.log("Fetching CoinStore from URL:", url);
-            
-            const response = await fetch(url, {
-              method: 'GET',
-              headers: {
-                'Accept': 'application/json'
-              }
-            });
-            
-            console.log(`CoinStore status: ${response.status} ${response.statusText}`);
+      const result = await aptos.view({
+        payload: {
+          function: "0x1::coin::balance",
+          typeArguments: ["0x1::aptos_coin::AptosCoin"],
+          functionArguments: [addressString],
+        },
+      });
 
-            if (response.ok) {
-              const data = await response.json();
-              console.log("CoinStore data:", JSON.stringify(data, null, 2));
-              
-              if (data?.data?.coin?.value) {
-                const balance = data.data.coin.value;
-                // Convert from Octas to APT (1 APT = 100,000,000 Octas)
-                const aptAmount = (parseInt(balance) / 100000000).toFixed(4);
-                console.log(`✅ SUCCESS! Found ${aptAmount} APT on ${network.name}`);
-                setAptBalance(aptAmount);
-                return; // Exit once we found the balance
-              } else {
-                console.log("Response structure unexpected:", data);
-              }
-            } else {
-              const errorText = await response.text();
-              console.log(`CoinStore error:`, errorText.substring(0, 200));
-              
-              // If CoinStore doesn't exist but account exists, it means 0 balance (uninitialized)
-              console.log(`⚠️ Account exists on ${network.name} but CoinStore not initialized. Balance is 0 or account needs to receive first transaction.`);
-            }
-          } else {
-            console.log(`Account doesn't exist on ${network.name}`);
-          }
-        } catch (err) {
-          console.log(`Exception on ${network.name}:`, err);
-          continue; // Try next network
-        }
-      }
+      const balanceInOctas = Number(result[0]);
+      const formattedBalance = (balanceInOctas / 100_000_000).toFixed(2);
       
-      // If we get here, no network had the account
-      console.log("\n❌ FAILED: Account not found on any network");
-      console.log("Please check:");
-      console.log("1. Is your wallet connected to testnet?");
-      console.log("2. Does your wallet address match:", targetAddress);
-      setAptBalance("0.0000");
+      console.log(`✅ Balance: ${formattedBalance} APT`);
+      setAptBalance(formattedBalance);
+
     } catch (error) {
-      console.error("Fatal error fetching APT balance:", error);
-      setAptBalance("0.0000");
+      console.error("Error fetching balance:", error);
+      setAptBalance("0.00");
     }
   };
 
-  // Check wallet connection on mount
-  useEffect(() => {
-    checkWalletConnection();
-  }, []);
-
-  // Fetch APT balance when wallet is connected
-  useEffect(() => {
-    if (walletAddress) {
-      fetchAptBalance();
-    }
-  }, [walletAddress]);
-
-  const checkWalletConnection = async () => {
+  const fetchUsername = async (address: string | any) => {
     try {
-      if (window.aptos) {
-        const isConnected = await window.aptos.isConnected();
-        if (isConnected) {
-          const account = await window.aptos.account();
-          setWalletAddress(account.address);
-          
-          // Immediately fetch balance with the address
-          fetchAptBalance(account.address);
-          
-          // Fetch username from Aptos Names Service or use address as fallback
-          try {
-            const nameResponse = await fetch(
-              `https://www.aptosnames.com/api/mainnet/v1/primary-name/${account.address}`
-            );
-            if (nameResponse.ok) {
-              const nameData = await nameResponse.json();
-              setUsername(nameData.name || null);
-            }
-          } catch {
-            setUsername(null);
-          }
-        }
-      }
+        const aptos = getAptosClient(); // Uses the key now!
+        const addressString = String(address);
+        const name = await aptos.ans.getPrimaryName({
+            address: addressString,
+        });
+        if (name) setUsername(name);
     } catch (error) {
-      console.error("Error checking wallet connection:", error);
+      setUsername(null);
     }
   };
 
   const connectWallet = async () => {
     setIsConnecting(true);
     try {
-      // Check if Petra wallet is installed
-      if (!window.aptos) {
-        toast({
-          title: "Petra Wallet Not Found",
-          description: "Please install Petra Wallet extension to continue.",
-          variant: "destructive",
-        });
-        // Open Petra installation page
-        window.open("https://petra.app/", "_blank");
-        setIsConnecting(false);
-        return;
-      }
-
-      // Request connection to Petra wallet - this will trigger the popup
-      const response = await window.aptos.connect();
-      
-      if (response.address) {
-        setWalletAddress(response.address);
-        
-        // Immediately fetch balance
-        fetchAptBalance(response.address);
-        
-        // Try to fetch username from Aptos Names Service
-        try {
-          const nameResponse = await fetch(
-            `https://www.aptosnames.com/api/mainnet/v1/primary-name/${response.address}`
-          );
-          if (nameResponse.ok) {
-            const nameData = await nameResponse.json();
-            setUsername(nameData.name || null);
-          }
-        } catch {
-          setUsername(null);
-        }
-        
-        toast({
-          title: "Wallet Connected!",
-          description: `Connected to ${response.address.slice(0, 6)}...${response.address.slice(-4)}`,
-          duration: 3000,
-        });
-      }
+      await connect('Petra' as any); 
     } catch (error: any) {
-      console.error("Error connecting to Petra wallet:", error);
-      
-      // Only show error if user didn't reject the connection
-      if (error.message && !error.message.includes('User rejected')) {
-        toast({
-          title: "Connection Failed",
-          description: error.message || "Failed to connect to Petra wallet. Please try again.",
-          variant: "destructive",
-        });
-      }
+      console.error("Failed to connect:", error);
+      toast({
+        title: "Connection Failed",
+        description: error?.message || "Could not connect to Petra",
+        variant: "destructive",
+      });
     } finally {
       setIsConnecting(false);
     }
@@ -223,25 +110,28 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
 
   const disconnectWallet = async () => {
     try {
-      if (window.aptos) {
-        await window.aptos.disconnect();
-        setWalletAddress(null);
-        setUsername(null);
-        setAptBalance("0");
-        toast({
-          title: "Wallet Disconnected",
-          description: "Your wallet has been disconnected",
-        });
-      }
+      await disconnect();
+      setUsername(null);
+      setAptBalance("0.00");
     } catch (error) {
-      console.error("Error disconnecting wallet:", error);
+      console.error("Failed to disconnect:", error);
     }
   };
+
+  useEffect(() => {
+    if (connected && account?.address) {
+      fetchAptBalance();
+      fetchUsername(account.address);
+    } else {
+      setAptBalance("0.00");
+      setUsername(null);
+    }
+  }, [connected, account, network]);
 
   return (
     <WalletContext.Provider
       value={{
-        walletAddress,
+        walletAddress: account?.address ? String(account.address) : null,
         username,
         aptBalance,
         isConnecting,
@@ -255,10 +145,20 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
   );
 }
 
-export function useWallet() {
+export function WalletProvider({ children }: { children: React.ReactNode }) {
+  const wallets = [new PetraWallet()];
+
+  return (
+    <AptosWalletAdapterProvider wallets={wallets} autoConnect={true}>
+      <WalletProviderContent>{children}</WalletProviderContent>
+    </AptosWalletAdapterProvider>
+  );
+}
+
+export function useWalletContext() {
   const context = useContext(WalletContext);
   if (context === undefined) {
-    throw new Error('useWallet must be used within a WalletProvider');
+    throw new Error('useWalletContext must be used within a WalletProvider');
   }
   return context;
 }

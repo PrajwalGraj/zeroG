@@ -8,11 +8,11 @@ import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import signinBg from "@/assets/signin-bg.jpg";
-import { useWallet } from "../wallet-provider";
+import { useWalletContext } from "../wallet-provider";
 
 export default function SignIn() {
   const [activeTab, setActiveTab] = useState<"photon" | "wallet">("photon");
-  const { walletAddress, isConnecting, connectWallet } = useWallet();
+  const { walletAddress, isConnecting, connectWallet } = useWalletContext();
 
   return (
     <div 
@@ -22,7 +22,7 @@ export default function SignIn() {
       {/* Header */}
       <div className="w-full border-b-2 border-border bg-background py-4 px-6">
         <div className="container mx-auto flex items-center justify-between">
-          <div className="text-2xl font-bold tracking-tight">zeroG</div>
+          <div className="text-2xl font-bold tracking-tight">ZeroG</div>
           <Link 
             href="/" 
             className="text-sm font-medium hover:underline flex items-center gap-2"
@@ -133,7 +133,7 @@ export default function SignIn() {
                       background: "linear-gradient(135deg, #8b5cf6 0%, #3b82f6 100%)",
                     }}
                   >
-                    {isConnecting ? "Connecting..." : walletAddress ? `Connected: ${walletAddress.slice(0, 6)}...${walletAddress.slice(-4)}` : "Connect Petra Wallet"}
+                    {isConnecting ? "Connecting..." : walletAddress ? `Connected: ${String(walletAddress).slice(0, 6)}...${String(walletAddress).slice(-4)}` : "Connect Petra Wallet"}
                   </button>
 
                   {walletAddress && (
