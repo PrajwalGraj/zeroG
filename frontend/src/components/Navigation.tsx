@@ -36,7 +36,7 @@ export const Navigation = () => {
           className="border-2 shadow-sm"
           asChild
         >
-          <Link href="/signin">Sign In</Link>
+          <Link href="/signin">Launch App</Link>
         </Button>
       </div>
     </nav>

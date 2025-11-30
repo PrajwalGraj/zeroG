@@ -52,8 +52,9 @@ export const Hero = () => {
                 size="lg" 
                 variant="outline" 
                 className="border-2 shadow-md text-lg px-8"
+                asChild
               >
-                Join Waitlist
+                <Link href="/signin">Launch App</Link>
               </Button>
             </div>
 
