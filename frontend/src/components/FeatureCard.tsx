@@ -5,13 +5,14 @@ interface FeatureCardProps {
   title: string;
   description: string;
   features: string[];
-  accentColor: "yellow" | "pink" | "teal";
+  accentColor: "yellow" | "pink" | "teal" | "purple";
 }
 
 const accentColors = {
   yellow: "bg-[hsl(var(--pastel-yellow))]",
   pink: "bg-[hsl(var(--pastel-pink))]",
   teal: "bg-[hsl(var(--pastel-teal))]",
+  purple: "bg-purple-200 dark:bg-purple-900/30",
 };
 
 export const FeatureCard = ({ 

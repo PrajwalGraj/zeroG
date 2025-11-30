@@ -1,4 +1,4 @@
-import { Shield, Vault, Rocket } from "lucide-react";
+import { Shield, Vault, Rocket, DollarSign } from "lucide-react";
 import { FeatureCard } from "./FeatureCard";
 
 export const Features = () => {
@@ -10,11 +10,11 @@ export const Features = () => {
             Complete DeFi infrastructure
           </h2>
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-            Everything you need to launch and manage tokens, from onboarding to trading
+            Everything you need to trade, earn, and access premium DeFi data
           </p>
         </div>
 
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
           <FeatureCard
             icon={Shield}
             title="Photon Integration"
@@ -43,14 +43,27 @@ export const Features = () => {
           
           <FeatureCard
             icon={Rocket}
-            title="Fair Launch & Trading"
-            description="Anti-whale token launches with built-in liquidity protection"
+            title="Swap & Staking"
+            description="Seamless token swaps with integrated staking rewards"
             accentColor="teal"
             features={[
-              "Create tokens in minutes",
-              "Fair launch mechanisms",
-              "Liquidity lock guarantees",
-              "Integrated swap & staking"
+              "Low-fee token swaps",
+              "Real-time price quotes",
+              "Liquidity pool access",
+              "Integrated staking"
+            ]}
+          />
+
+          <FeatureCard
+            icon={DollarSign}
+            title="x402 API Marketplace"
+            description="Pay-per-use premium DeFi data with blockchain payments"
+            accentColor="purple"
+            features={[
+              "Premium pool analytics",
+              "Pay only for what you use",
+              "HTTP 402 protocol",
+              "Instant data access"
             ]}
           />
         </div>

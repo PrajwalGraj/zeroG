@@ -81,33 +81,33 @@ export default function Dashboard() {
       {/* Dashboard Navbar */}
       <nav className="border-b-2 border-border bg-background/80 backdrop-blur-sm sticky top-0 z-50">
         <div className="container mx-auto px-6 py-4">
-          <div className="grid grid-cols-3 items-center">
+          <div className="flex items-center justify-between gap-8">
             {/* Logo - Left */}
-            <div>
+            <div className="flex-shrink-0">
               <Link href="/" className="text-2xl font-bold tracking-tight">
                 ZeroG
               </Link>
             </div>
 
             {/* Center Navigation Buttons */}
-            <div className="flex items-center justify-center gap-4">
-              <Button variant="ghost" className="font-medium border-2 border-border rounded-full px-6" asChild>
+            <div className="flex items-center justify-center gap-3 flex-1">
+              <Button variant="ghost" className="font-medium border-2 border-border rounded-full px-5 h-10 whitespace-nowrap" asChild>
                 <Link href="/dashboard">Dashboard</Link>
               </Button>
-              <Button variant="ghost" className="font-medium border-2 border-border rounded-full px-6" asChild>
+              <Button variant="ghost" className="font-medium border-2 border-border rounded-full px-5 h-10 whitespace-nowrap" asChild>
                 <Link href="/vault">Vault</Link>
               </Button>
-              <Button variant="ghost" className="font-medium border-2 border-border rounded-full px-6" asChild>
+              <Button variant="ghost" className="font-medium border-2 border-border rounded-full px-5 h-10 whitespace-nowrap" asChild>
                 <Link href="/swap">Swap</Link>
               </Button>
-              <Button variant="ghost" className="font-medium border-2 border-border rounded-full px-6" asChild>
-                <Link href="/dashboard">Launch</Link>
+              <Button variant="ghost" className="font-medium border-2 border-border rounded-full px-5 h-10 whitespace-nowrap" asChild>
+                <Link href="/marketplace">Marketplace</Link>
               </Button>
             </div>
 
             {/* Right Side: APT Balance & Wallet Address */}
-            <div className="flex items-center justify-end gap-4">
-            {isAuthenticated ? (
+            <div className="flex items-center justify-end gap-3 flex-shrink-0">
+            {mounted && isAuthenticated ? (
               <>
                 {/* APT Balance with Refresh (only for Petra wallet) */}
                 {walletAddress && (
@@ -126,7 +126,7 @@ export default function Dashboard() {
                 )}
 
                 {/* Wallet Address (Display Only) */}
-                {mounted && displayAddress && (
+                {displayAddress && (
                   <div className="px-4 py-2 border-2 border-border bg-background font-mono text-sm rounded-full flex items-center gap-2">
                     <span>{String(displayAddress).slice(0, 6)}...{String(displayAddress).slice(-4)}</span>
                     {photonWallet && (
@@ -152,7 +152,7 @@ export default function Dashboard() {
                   Disconnect
                 </Button>
               </>
-            ) : (
+            ) : mounted ? (
               <Button
                 variant="outline"
                 size="sm"
@@ -161,7 +161,7 @@ export default function Dashboard() {
               >
                 Connect Wallet
               </Button>
-            )}
+            ) : null}
           </div>
         </div>
       </div>

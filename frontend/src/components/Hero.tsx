@@ -27,14 +27,14 @@ export const Hero = () => {
             </div>
             
             <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold leading-tight">
-              Launch tokens
+              Trade DeFi
               <br />
               the <span className="italic">right</span> way
             </h1>
             
             <p className="text-lg md:text-xl text-muted-foreground max-w-xl">
               Complete DeFi infrastructure: passwordless onboarding, automated vaults, 
-              fair launches, and swap/staking. Liquidity lock built in.
+              secure swaps, and liquidity mining. Built for simplicity and security.
             </p>
 
             <div className="flex flex-col sm:flex-row gap-4">

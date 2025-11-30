@@ -147,8 +147,9 @@ export function usePhoton() {
 
       if (!response.ok) {
         const errorText = await response.text();
-        console.error('Track API error:', response.status, errorText);
-        throw new Error(`Failed to track event: ${response.status} - ${errorText}`);
+        console.warn('Track API error (non-blocking):', response.status, errorText);
+        // Don't throw - tracking errors shouldn't break user flow
+        return;
       }
 
       const data = await response.json();

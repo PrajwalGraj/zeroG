@@ -23,10 +23,18 @@ declare global {
 export default function SignIn() {
   const [activeTab, setActiveTab] = useState<"photon" | "wallet">("photon");
   const { walletAddress, isConnecting, connectWallet } = useWalletContext();
-  const { login: photonLogin, track, isLoading: photonLoading } = usePhoton();
+  const { login: photonLogin, track, isLoading: photonLoading, walletAddress: photonWallet } = usePhoton();
   const router = useRouter();
   const [isGoogleLoaded, setIsGoogleLoaded] = useState(false);
   const [referralCode, setReferralCode] = useState<string | null>(null);
+
+  // Redirect if already authenticated
+  useEffect(() => {
+    if (walletAddress || photonWallet) {
+      console.log('User already authenticated, redirecting to dashboard');
+      router.push('/dashboard');
+    }
+  }, [walletAddress, photonWallet, router]);
 
   // Extract referral code from URL on mount
   useEffect(() => {
