@@ -238,28 +238,6 @@ export default function RewardsPanel() {
           </div>
         </div>
       </Card>
-
-      {/* Platform Stats */}
-      <Card className="border-4 border-border bg-gradient-to-br from-muted/50 to-background p-6">
-        <div className="flex items-center gap-2 mb-4">
-          <BarChart3 className="w-5 h-5 text-primary" />
-          <h3 className="font-bold text-lg">Platform Stats</h3>
-        </div>
-        <div className="grid grid-cols-3 gap-4">
-          <div className="text-center">
-            <div className="text-2xl font-bold text-primary">2.5M+</div>
-            <div className="text-xs text-muted-foreground">ZRG Distributed</div>
-          </div>
-          <div className="text-center">
-            <div className="text-2xl font-bold text-primary">15K+</div>
-            <div className="text-xs text-muted-foreground">Active Users</div>
-          </div>
-          <div className="text-center">
-            <div className="text-2xl font-bold text-primary">$50M+</div>
-            <div className="text-xs text-muted-foreground">Total Volume</div>
-          </div>
-        </div>
-      </Card>
     </div>
   );
 }
