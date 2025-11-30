@@ -39,7 +39,7 @@ export default function MarketplacePage() {
                 <Link href="/vault">Vault</Link>
               </Button>
               <Button variant="ghost" className="font-medium border-2 border-border rounded-full px-6" asChild>
-                <Link href="/marketplace">Marketplace</Link>
+                <Link href="/marketplace">x402</Link>
               </Button>
             </div>
 

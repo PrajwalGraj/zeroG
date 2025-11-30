@@ -101,7 +101,7 @@ export default function Dashboard() {
                 <Link href="/swap">Swap</Link>
               </Button>
               <Button variant="ghost" className="font-medium border-2 border-border rounded-full px-5 h-10 whitespace-nowrap" asChild>
-                <Link href="/marketplace">Marketplace</Link>
+                <Link href="/marketplace">x402</Link>
               </Button>
             </div>
 
