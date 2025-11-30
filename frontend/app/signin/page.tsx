@@ -26,6 +26,17 @@ export default function SignIn() {
   const { login: photonLogin, track, isLoading: photonLoading } = usePhoton();
   const router = useRouter();
   const [isGoogleLoaded, setIsGoogleLoaded] = useState(false);
+  const [referralCode, setReferralCode] = useState<string | null>(null);
+
+  // Extract referral code from URL on mount
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const ref = params.get('ref');
+    if (ref) {
+      setReferralCode(ref);
+      console.log('📎 Referral code detected:', ref);
+    }
+  }, []);
 
   // Handle Google Sign-In callback (defined before useEffect)
   const handleGoogleCallback = async (response: any) => {
@@ -33,21 +44,39 @@ export default function SignIn() {
       const googleJWT = response.credential;
       console.log('Google sign-in received, JWT:', googleJWT?.substring(0, 20) + '...');
       
-      // Decode JWT to get user info (without verification since it's from Google)
+      // Decode JWT to get user info
       const base64Url = googleJWT.split('.')[1];
       const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
       const payload = JSON.parse(window.atob(base64));
       console.log('Google user info:', { sub: payload.sub, email: payload.email });
       
-      // Use Google's unique user ID (sub) as client_user_id
-      const clientUserId = payload.sub;
-      
-      // Login to Photon with Google JWT and user ID
-      const result = await photonLogin(googleJWT, clientUserId);
+      // Login to Photon first to get wallet address
+      const result = await photonLogin(googleJWT, payload.sub);
       console.log('Photon login result:', result);
       
-      if (result) {
-        // Successfully logged in - redirect to dashboard
+      if (result && result.walletAddress) {
+        // Process referral if referral code exists
+        if (referralCode) {
+          console.log('🎁 Processing referral for new user');
+          try {
+            const referralResponse = await fetch('/api/referral/process', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                referralCode: referralCode,
+                clientUserId: result.walletAddress
+              })
+            });
+            
+            if (referralResponse.ok) {
+              console.log('✅ Referral processed successfully');
+            }
+          } catch (error) {
+            console.error('Referral processing failed:', error);
+          }
+        }
+        
+        // Redirect to dashboard
         console.log('Redirecting to dashboard with wallet:', result.walletAddress);
         router.push('/dashboard');
       }
