@@ -1,5 +1,4 @@
-require("dotenv").config();  // <-- loads .env
-
+require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
 
@@ -7,33 +6,62 @@ const app = express();
 app.use(express.json());
 app.use(cors());
 
-// ===== ROUTES =====
+// Global error handlers to prevent crashes
+process.on("uncaughtException", (err) => {
+  console.error("❌ Uncaught Exception:", err);
+});
 
+process.on("unhandledRejection", (reason) => {
+  console.error("❌ Unhandled Rejection:", reason);
+});
 
-// OFF-CHAIN DEX pool data (GeckoTerminal)
-const poolsApiRoutes = require("./routes/poolsApiRoutes");
-app.use("/api/pools", poolsApiRoutes);
+// ⭐ Thala route — only once
+app.use("/api/thala", require("./routes/thalaRoutes"));
+
+// OFF-CHAIN DEX pool data
+app.use("/api/pools", require("./routes/poolsApiRoutes"));
 
 // ON-CHAIN reserves route
-const poolsRoutes = require("./routes/poolsRoutes");
-app.use("/api/pools/onchain", poolsRoutes);
+app.use("/api/pools/onchain", require("./routes/poolsRoutes"));
 
-// Launchpad engine
-const launchRoutes = require("./routes/launchRoutes");
-app.use("/api/launch", launchRoutes);
+// Launchpad
+app.use("/api/launch", require("./routes/launchRoutes"));
 
-// Scoring engine (ALL scoring endpoints)
-const scoreRoutes = require("./routes/scoreRoutes");
-app.use("/api/scores", scoreRoutes);
+// Scoring
+app.use("/api/scores", require("./routes/scoreRoutes"));
 
-// Panora Swap API
-const panoraRoutes = require("./routes/panoraRoutes");
-app.use("/api/panora", panoraRoutes);
+// Panora
+app.use("/api/panora", require("./routes/panoraRoutes"));
 
-// Root health check
+// Root
 app.get("/", (req, res) => {
   res.send({ status: "ZeroG backend running ✔" });
 });
 
+// Express error handler (must be after all routes)
+app.use((err, req, res, next) => {
+  console.error("❌ Express error:", err);
+  if (res.headersSent) return next(err);
+  res.status(500).json({ error: err.message || String(err) });
+});
+
 const PORT = process.env.PORT || 4000;
-app.listen(PORT, () => console.log(`Backend running on port ${PORT}`));
+
+const server = app.listen(PORT, () => {
+  console.log(`Backend running on port ${PORT}`);
+});
+
+// Keep the process alive
+process.on('SIGTERM', () => {
+  console.log('Shutting down gracefully');
+  server.close(() => process.exit(0));
+});
+
+process.on('SIGINT', () => {
+  console.log('Shutting down gracefully');
+  server.close(() => process.exit(0));
+});
+
+// Explicitly keep the event loop alive (workaround for Express 5.x issue)
+const keepAlive = setInterval(() => {}, 1000000);
+process.on('exit', () => clearInterval(keepAlive));

@@ -1,3 +1,5 @@
+// backend/routes/panoraRoutes.js
+
 const express = require("express");
 const { getPanoraQuote } = require("../services/panoraFetcher");
 
@@ -7,6 +9,7 @@ router.post("/quote", async (req, res) => {
   try {
     const query = req.body || {};
 
+    // Required fields
     if (!query.fromTokenAddress || !query.toTokenAddress) {
       return res.status(400).json({ error: "Missing token addresses" });
     }
