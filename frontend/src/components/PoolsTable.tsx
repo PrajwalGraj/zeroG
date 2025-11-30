@@ -43,6 +43,7 @@ export interface Pool {
   apr: number;
   type: "stable" | "concentrated" | "metastable";
   feeTier: number;
+  score?: number;
 }
 
 const tokenLogos: Record<string, string> = {
@@ -77,7 +78,7 @@ interface PoolsTableProps {
   onViewPool?: (pool: Pool) => void;
 }
 
-type SortKey = "tvl" | "volume24h" | "apr";
+type SortKey = "tvl" | "volume24h" | "apr" | "score";
 type SortOrder = "asc" | "desc";
 
 export const PoolsTable = ({
@@ -177,6 +178,15 @@ export const PoolsTable = ({
                   <ArrowUpDown className="h-3 w-3" />
                 </button>
               </TableHead>
+              <TableHead className="font-bold text-foreground">
+                <button
+                  onClick={() => handleSort("score")}
+                  className="flex items-center gap-1 hover:text-primary transition-colors"
+                >
+                  Risk Score
+                  <ArrowUpDown className="h-3 w-3" />
+                </button>
+              </TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -244,6 +254,31 @@ export const PoolsTable = ({
                       {pool.apr.toFixed(2)}%
                     </span>
                   </div>
+                </TableCell>
+                <TableCell>
+                  {pool.score !== undefined ? (
+                    <div className="flex items-center gap-2">
+                      <div className="w-20 h-2 bg-muted rounded-full overflow-hidden border border-border">
+                        <div
+                          className={`h-full transition-all duration-300 ${
+                            pool.score > 0.7 ? 'bg-red-500' :
+                            pool.score > 0.4 ? 'bg-yellow-500' :
+                            'bg-green-500'
+                          }`}
+                          style={{ width: `${pool.score * 100}%` }}
+                        />
+                      </div>
+                      <span className={`text-xs font-bold min-w-[45px] ${
+                        pool.score > 0.7 ? 'text-red-600' :
+                        pool.score > 0.4 ? 'text-yellow-600' :
+                        'text-green-600'
+                      }`}>
+                        {(pool.score * 100).toFixed(1)}%
+                      </span>
+                    </div>
+                  ) : (
+                    <span className="text-xs text-muted-foreground">N/A</span>
+                  )}
                 </TableCell>
               </TableRow>
             ))}

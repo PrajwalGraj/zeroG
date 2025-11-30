@@ -7,66 +7,51 @@ const {
   fetchMerkleMarkets,
 } = require("../services/dexFetcher");
 
-const { findPoolInfo } = require("../services/poolInfo");
+// =========================
+// TEST EACH DEX ENDPOINT
+// =========================
 
-// Get full metadata for a pool based on poolAddress
-router.get("/info/:address", async (req, res) => {
+// GET /api/pools/thala
+router.get("/thala", async (req, res) => {
   try {
-    const poolAddress = req.params.address;
-    const info = await findPoolInfo(poolAddress);
-
-    if (!info) {
-      return res.status(404).json({ error: "Pool not found" });
-    }
-
-    res.json(info);
+    const data = await fetchThalaPools();
+    res.json(data);
   } catch (err) {
-    console.error("Pool info error:", err);
-    res.status(500).json({ error: "Failed to fetch pool info" });
+    res.status(500).json({ error: err.message });
   }
 });
 
+// GET /api/pools/liquidswap
+router.get("/liquidswap", async (req, res) => {
+  try {
+    const data = await fetchLiquidswapPools();
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
 
-// return combined DEX pools
+// GET /api/pools/merkle
+router.get("/merkle", async (req, res) => {
+  try {
+    const data = await fetchMerkleMarkets();
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// GET /api/pools/all → combine data
 router.get("/all", async (req, res) => {
   try {
     const thala = await fetchThalaPools();
     const liquidswap = await fetchLiquidswapPools();
     const merkle = await fetchMerkleMarkets();
 
-    res.json({
-      thala,
-      liquidswap,
-      merkle,
-    });
-  } catch (err) {
-    console.log(err);
-    res.status(500).json({ error: "Failed to fetch pools" });
-  }
-});
-
-// 🔍 DEBUG ROUTE — Identify real pools by address
-router.get("/debug", async (req, res) => {
-  try {
-    const thala = await fetchThalaPools();
-    const liquidswap = await fetchLiquidswapPools();
-
-    res.json({
-      thala: thala.slice(0, 5).map(p => ({
-        address: p?.attributes?.address,
-        tvl: p?.attributes?.reserve_in_usd,
-        price: p?.attributes?.price_usd
-      })),
-      liquidswap: liquidswap.slice(0, 5).map(p => ({
-        address: p?.attributes?.address,
-        tvl: p?.attributes?.reserve_in_usd,
-        price: p?.attributes?.price_usd
-      }))
-    });
+    res.json({ thala, liquidswap, merkle });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
-// 🚨 VERY IMPORTANT: export router at the end
 module.exports = router;
