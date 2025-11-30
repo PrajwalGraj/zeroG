@@ -187,7 +187,6 @@ export default function Dashboard() {
               <div className="border-2 border-border bg-background/90 backdrop-blur-sm p-6 shadow-md">
                 <h3 className="text-sm font-medium text-muted-foreground mb-2">Total Balance</h3>
                 <p className="text-3xl font-bold">{aptBalance} APT</p>
-                <p className="text-xs text-muted-foreground mt-1">≈ ${(parseFloat(aptBalance) * 8.5).toFixed(2)} USD</p>
               </div>
 
               <div className="border-2 border-border bg-background/90 backdrop-blur-sm p-6 shadow-md">
