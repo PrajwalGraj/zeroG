@@ -331,6 +331,7 @@ import { MyPositions } from "@/components/MyPositions";
 import { VaultCard, Vault } from "@/components/VaultCard";
 import { PoolsTable, Pool } from "@/components/PoolsTable";
 import { VaultModal } from "@/components/VaultModal";
+import { DepositWithdrawModal } from "@/components/DepositWithdrawModal";
 import { Button } from "@/components/ui/button";
 import { Plus, ArrowDownToLine, ArrowUpFromLine, LayoutGrid } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
@@ -338,6 +339,9 @@ import { usePhoton } from "@/hooks/usePhoton";
 import { useWalletContext } from "../wallet-provider";
 import signinBg from "@/assets/signin-bg.jpg";
 import { usePools } from "@/hooks/usePools";
+import { depositToVault, initializeVault } from "@/utils/vaultTx";
+import { requestWithdraw } from "@/utils/vaultApi";
+import { useEffect } from "react";
 
 const sampleVaults: Vault[] = [
   {
@@ -401,15 +405,63 @@ export default function VaultPage() {
 
   const [selectedVault, setSelectedVault] = useState<Vault | null>(null);
   const [showPools, setShowPools] = useState(false);
+  const [showDepositModal, setShowDepositModal] = useState(false);
+  const [showWithdrawModal, setShowWithdrawModal] = useState(false);
+  
+  // Vault state
+  const [vaultInitialized, setVaultInitialized] = useState(false);
+  const [vaultTotalBalance, setVaultTotalBalance] = useState(0);
+  const [userVaultBalance, setUserVaultBalance] = useState(0);
+  const [loadingVault, setLoadingVault] = useState(true);
   
   const isConnected = !!petraWallet || !!photonWallet;
   const displayAddress = petraWallet || photonWallet;
 
-  // User positions - set to 0 until we have actual user position data from backend
-  // TODO: Fetch user's actual positions from backend API when available
-  const totalValue = 0;
+  // User positions - use vault balance
+  const totalValue = userVaultBalance / 100_000_000; // Convert from octas to APT
   const totalYield = 0;
-  const activePositions = 0;
+  const activePositions = userVaultBalance > 0 ? 1 : 0;
+
+  // Fetch vault data from Aptos blockchain
+  const fetchVaultData = async () => {
+    try {
+      setLoadingVault(true);
+      const CONTRACT_ADDRESS = "0x40e2eb967aa9abb469a5d3437717560c9b77b5af2f27f99c039a7c90c0bfc42d";
+      
+      // Check if vault is initialized
+      const response = await fetch(
+        `https://fullnode.testnet.aptoslabs.com/v1/accounts/${CONTRACT_ADDRESS}/resource/${CONTRACT_ADDRESS}::Vault::VaultData`
+      );
+      
+      if (response.ok) {
+        const data = await response.json();
+        setVaultInitialized(true);
+        setVaultTotalBalance(parseInt(data.data.total_balance || "0"));
+        
+        // Fetch user's balance from localStorage for now
+        if (petraWallet) {
+          const stored = localStorage.getItem(`vault_balance_${petraWallet}`);
+          if (stored) {
+            setUserVaultBalance(parseInt(stored));
+          }
+        }
+      } else {
+        setVaultInitialized(false);
+        setVaultTotalBalance(0);
+        setUserVaultBalance(0);
+      }
+    } catch (error) {
+      console.error("Error fetching vault data:", error);
+      setVaultInitialized(false);
+    } finally {
+      setLoadingVault(false);
+    }
+  };
+
+  // Fetch vault data on mount and when wallet changes
+  useEffect(() => {
+    fetchVaultData();
+  }, [petraWallet]);
 
   const handleEnterVault = async (vault: Vault) => {
     setSelectedVault(vault);
@@ -436,21 +488,104 @@ export default function VaultPage() {
     });
   };
 
+  const handleInitVault = async () => {
+    try {
+      console.log('Initializing vault...');
+      const tx = await initializeVault();
+      console.log('Init transaction result:', tx);
+      toast({
+        title: "Vault Initialized!",
+        description: `Transaction: ${tx.hash.slice(0, 10)}...`,
+      });
+      // Refresh vault data after 3 seconds
+      setTimeout(() => fetchVaultData(), 3000);
+    } catch (err: any) {
+      console.error('Init error:', err);
+      toast({
+        title: "Initialization Failed",
+        description: err.message || String(err),
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleDeposit = async (amount: number) => {
+    try {
+      console.log('Starting deposit with amount:', amount);
+      const tx = await depositToVault(amount);
+      console.log('Deposit transaction result:', tx);
+      
+      // Update local balance immediately
+      const amountOctas = Math.floor(amount * 100_000_000);
+      const newBalance = userVaultBalance + amountOctas;
+      setUserVaultBalance(newBalance);
+      if (petraWallet) {
+        localStorage.setItem(`vault_balance_${petraWallet}`, newBalance.toString());
+      }
+      
+      toast({
+        title: "Deposit Successful!",
+        description: `Deposited ${amount} APT. Transaction: ${tx.hash.slice(0, 10)}...`,
+      });
+      
+      // Refresh vault data after 3 seconds
+      setTimeout(() => fetchVaultData(), 3000);
+    } catch (err: any) {
+      console.error('Deposit error:', err);
+      toast({
+        title: "Deposit Failed",
+        description: err.message || String(err),
+        variant: "destructive",
+      });
+      throw err;
+    }
+  };
+
+  const handleWithdraw = async (amount: number) => {
+    try {
+      const result = await requestWithdraw(displayAddress!, amount);
+      toast({
+        title: "Withdraw Successful!",
+        description: result.message || `Withdrew ${amount} APT`,
+      });
+    } catch (err: any) {
+      toast({
+        title: "Withdraw Failed",
+        description: err.message || String(err),
+        variant: "destructive",
+      });
+      throw err;
+    }
+  };
+
   const quickActions = [
-    { 
-      label: "Create Vault", 
-      icon: Plus, 
-      onClick: () => toast({ title: "Create Vault" })
-    },
     { 
       label: "Deposit", 
       icon: ArrowDownToLine, 
-      onClick: () => toast({ title: "Deposit" })
+      onClick: () => {
+        if (!isConnected) {
+          toast({ 
+            title: "Wallet Not Connected", 
+            description: "Please connect your wallet first." 
+          });
+          return;
+        }
+        setShowDepositModal(true);
+      }
     },
     { 
       label: "Withdraw", 
       icon: ArrowUpFromLine, 
-      onClick: () => toast({ title: "Withdraw" })
+      onClick: () => {
+        if (!isConnected) {
+          toast({ 
+            title: "Wallet Not Connected", 
+            description: "Please connect your wallet first." 
+          });
+          return;
+        }
+        setShowWithdrawModal(true);
+      }
     },
     { 
       label: "Pools", 
@@ -536,6 +671,17 @@ export default function VaultPage() {
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-2xl font-bold">Vaults</h2>
             <div className="flex gap-3">
+              {/* Initialize Vault Button (only for admin) */}
+              {petraWallet === "0x40e2eb967aa9abb469a5d3437717560c9b77b5af2f27f99c039a7c90c0bfc42d" && (
+                <Button
+                  variant="outline"
+                  className="border-2 rounded-full gap-2"
+                  onClick={handleInitVault}
+                >
+                  <Plus className="h-4 w-4" />
+                  Initialize Vault
+                </Button>
+              )}
               {quickActions.map((action) => (
                 <Button
                   key={action.label}
@@ -550,6 +696,81 @@ export default function VaultPage() {
             </div>
           </div>
 
+          {/* Main Vault Display */}
+          {loadingVault ? (
+            <div className="text-center text-muted-foreground py-10">
+              Loading vault...
+            </div>
+          ) : vaultInitialized ? (
+            <div className="mb-6">
+              <div className="border-2 border-border rounded-3xl p-6 bg-card/50 backdrop-blur-sm">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-xl font-bold">ZeroG Vault #1</h3>
+                  <span className="bg-primary/10 text-primary px-3 py-1 rounded-full text-sm font-medium">
+                    Active
+                  </span>
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                  <div className="p-4 bg-background/50 rounded-xl border border-border">
+                    <p className="text-sm text-muted-foreground mb-1">Total Value Locked</p>
+                    <p className="text-2xl font-bold">{(vaultTotalBalance / 100_000_000).toFixed(4)} APT</p>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      ${((vaultTotalBalance / 100_000_000) * 10).toFixed(2)} USD
+                    </p>
+                  </div>
+                  
+                  <div className="p-4 bg-background/50 rounded-xl border border-border">
+                    <p className="text-sm text-muted-foreground mb-1">Your Balance</p>
+                    <p className="text-2xl font-bold">{(userVaultBalance / 100_000_000).toFixed(4)} APT</p>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      ${((userVaultBalance / 100_000_000) * 10).toFixed(2)} USD
+                    </p>
+                  </div>
+                  
+                  <div className="p-4 bg-background/50 rounded-xl border border-border">
+                    <p className="text-sm text-muted-foreground mb-1">Your Share</p>
+                    <p className="text-2xl font-bold">
+                      {vaultTotalBalance > 0 
+                        ? ((userVaultBalance / vaultTotalBalance) * 100).toFixed(2) 
+                        : "0.00"}%
+                    </p>
+                    <p className="text-sm text-muted-foreground mt-1">of total vault</p>
+                  </div>
+                </div>
+
+                <div className="p-4 bg-background/50 rounded-xl border border-border">
+                  <p className="text-sm font-medium mb-3">Assets in Vault</p>
+                  <div className="flex items-center justify-between p-3 bg-card rounded-lg">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center">
+                        <span className="font-bold text-primary">APT</span>
+                      </div>
+                      <div>
+                        <p className="font-medium">Aptos</p>
+                        <p className="text-sm text-muted-foreground">APT</p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className="font-bold">{(vaultTotalBalance / 100_000_000).toFixed(4)} APT</p>
+                      <p className="text-sm text-muted-foreground">
+                        ${((vaultTotalBalance / 100_000_000) * 10).toFixed(2)}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="mb-6 text-center py-10 border-2 border-dashed border-border rounded-3xl">
+              <p className="text-muted-foreground">
+                Vault not initialized. {petraWallet === "0x40e2eb967aa9abb469a5d3437717560c9b77b5af2f27f99c039a7c90c0bfc42d" ? "Click 'Initialize Vault' to get started." : "Please wait for admin to initialize the vault."}
+              </p>
+            </div>
+          )}
+
+          {/* Top Pools */}
+          <h3 className="text-xl font-bold mb-4">Top Performing Pools</h3>
           {poolsLoading ? (
             <div className="text-center text-muted-foreground py-10">
               Loading pools...
@@ -611,6 +832,20 @@ export default function VaultPage() {
         isOpen={!!selectedVault}
         onClose={() => setSelectedVault(null)}
         associatedPools={formattedPools.slice(0, 3)}
+      />
+
+      <DepositWithdrawModal
+        isOpen={showDepositModal}
+        onClose={() => setShowDepositModal(false)}
+        mode="deposit"
+        onSubmit={handleDeposit}
+      />
+
+      <DepositWithdrawModal
+        isOpen={showWithdrawModal}
+        onClose={() => setShowWithdrawModal(false)}
+        mode="withdraw"
+        onSubmit={handleWithdraw}
       />
     </div>
   );

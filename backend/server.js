@@ -33,6 +33,9 @@ app.use("/api/scores", require("./routes/scoreRoutes"));
 // Panora
 app.use("/api/panora", require("./routes/panoraRoutes"));
 
+// Vault
+app.use("/api/vault", require("./routes/vaultRoutes"));
+
 // Root
 app.get("/", (req, res) => {
   res.send({ status: "ZeroG backend running ✔" });

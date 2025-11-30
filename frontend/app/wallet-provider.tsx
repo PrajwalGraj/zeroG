@@ -22,12 +22,14 @@ interface WalletContextType {
   connectWallet: () => Promise<void>;
   disconnectWallet: () => Promise<void>;
   fetchAptBalance: () => Promise<void>;
+  signAndSubmitTransaction: (transaction: { payload: any }) => Promise<any>;
 }
 
 const WalletContext = createContext<WalletContextType | undefined>(undefined);
 
 function WalletProviderContent({ children }: { children: React.ReactNode }) {
-  const { account, connected, connect, disconnect, network } = useAptosWallet();
+  const walletAdapter = useAptosWallet();
+  const { account, connected, connect, disconnect, network, signAndSubmitTransaction } = walletAdapter;
   const [username, setUsername] = useState<string | null>(null);
   const [aptBalance, setAptBalance] = useState<string>("0.00");
   const [isConnecting, setIsConnecting] = useState(false);
@@ -138,6 +140,9 @@ function WalletProviderContent({ children }: { children: React.ReactNode }) {
         connectWallet,
         disconnectWallet,
         fetchAptBalance,
+        signAndSubmitTransaction: connected && signAndSubmitTransaction 
+          ? signAndSubmitTransaction 
+          : async () => { throw new Error("Wallet not connected") },
       }}
     >
       {children}
