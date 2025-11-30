@@ -1,8 +1,14 @@
+require("dotenv").config();  // <-- loads .env
+
 const express = require("express");
+const cors = require("cors");
+
 const app = express();
 app.use(express.json());
+app.use(cors());
 
 // ===== ROUTES =====
+
 
 // OFF-CHAIN DEX pool data (GeckoTerminal)
 const poolsApiRoutes = require("./routes/poolsApiRoutes");
@@ -20,14 +26,14 @@ app.use("/api/launch", launchRoutes);
 const scoreRoutes = require("./routes/scoreRoutes");
 app.use("/api/scores", scoreRoutes);
 
-// Panora (optional)
+// Panora Swap API
 const panoraRoutes = require("./routes/panoraRoutes");
 app.use("/api/panora", panoraRoutes);
 
-// Root
+// Root health check
 app.get("/", (req, res) => {
   res.send({ status: "ZeroG backend running ✔" });
 });
 
-const PORT = 4000;
+const PORT = process.env.PORT || 4000;
 app.listen(PORT, () => console.log(`Backend running on port ${PORT}`));

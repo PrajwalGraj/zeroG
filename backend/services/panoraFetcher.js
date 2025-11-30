@@ -1,22 +1,26 @@
-const axios = require("axios");
+// backend/services/panoraFetcher.js
 
-async function fetchPanoraPools() {
+const PANORA_ENDPOINT = "https://api.panora.exchange/swap";
+const API_KEY = process.env.PANORA_API_KEY;
+
+async function getPanoraQuote(query) {
   try {
-    const { data } = await axios.get(
-      "https://api.panora.exchange/api/v1/liquidity/pools",
-      {
-        headers: {
-          "User-Agent": "Mozilla/5.0"
-        }
-      }
-    );
+    const qs = new URLSearchParams(query).toString();
+    const url = `${PANORA_ENDPOINT}?${qs}`;
 
-    // Data format: data[i] contains pool analytics
-    return data;
+    const response = await fetch(url, {
+      method: "POST",
+      headers: {
+        "x-api-key": API_KEY,
+      },
+    });
+
+    const data = await response.json();
+    return { status: response.status, data };
   } catch (err) {
-    console.log("Panora API Error:", err.message);
-    return [];
+    console.error("Panora Fetch Error:", err);
+    throw new Error("Failed to fetch Panora swap quote");
   }
 }
 
-module.exports = { fetchPanoraPools };
+module.exports = { getPanoraQuote };
