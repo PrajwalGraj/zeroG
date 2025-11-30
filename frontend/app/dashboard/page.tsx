@@ -3,10 +3,67 @@
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { useWalletContext } from "../wallet-provider";
+import { usePhoton } from "@/hooks/usePhoton";
 import signinBg from "@/assets/signin-bg.jpg";
 
 export default function Dashboard() {
   const { walletAddress, username, aptBalance, connectWallet, disconnectWallet, fetchAptBalance } = useWalletContext();
+  const { track, walletAddress: photonWallet, logout: photonLogout, clientUserId } = usePhoton();
+  
+  // Debug logging
+  console.log('Dashboard auth state:', { 
+    petraWallet: walletAddress, 
+    photonWallet: photonWallet, 
+    clientUserId: clientUserId,
+    isAuthenticated: !!walletAddress || !!photonWallet 
+  });
+  console.log('Raw photonWallet value:', photonWallet);
+  console.log('Type:', typeof photonWallet);
+  
+  // User is authenticated if they have either a Petra wallet or Photon wallet
+  const isAuthenticated = !!walletAddress || !!photonWallet;
+  const displayAddress = walletAddress || photonWallet;
+  const authMethod = walletAddress ? 'Petra Wallet' : 'Photon Wallet';
+
+  // Track vault deposit
+  const handleVaultDeposit = async () => {
+    try {
+      await track('vault_deposit', {
+        amount: '100',
+        token: 'APT',
+      });
+    } catch (error) {
+      // Feature works without Photon tracking
+      console.log('Vault deposit - Photon tracking skipped');
+    }
+    // Add your vault deposit logic here
+  };
+
+  // Track token launch
+  const handleTokenLaunch = async () => {
+    try {
+      await track('token_launch', {
+        token_name: 'MyToken',
+        token_symbol: 'MTK',
+      });
+    } catch (error) {
+      console.log('Token launch - Photon tracking skipped');
+    }
+    // Add your token launch logic here
+  };
+
+  // Track staking
+  const handleStaking = async () => {
+    try {
+      await track('staking_start', {
+        amount: '50',
+        token: 'APT',
+      });
+    } catch (error) {
+      console.log('Staking - Photon tracking skipped');
+    }
+    // Add your staking logic here
+  };
 
   return (
     <div 
@@ -15,46 +72,54 @@ export default function Dashboard() {
     >
       {/* Dashboard Navbar */}
       <nav className="border-b-2 border-border bg-background/80 backdrop-blur-sm sticky top-0 z-50">
-        <div className="container mx-auto flex items-center justify-between px-6 py-4">
-          {/* Logo */}
-          <Link href="/" className="text-2xl font-bold tracking-tight">
-            ZeroG
-          </Link>
+        <div className="container mx-auto px-6 py-4">
+          <div className="grid grid-cols-3 items-center">
+            {/* Logo - Left */}
+            <div>
+              <Link href="/" className="text-2xl font-bold tracking-tight">
+                ZeroG
+              </Link>
+            </div>
 
-          {/* Center Navigation Buttons */}
-          <div className="hidden md:flex items-center gap-6">
-            <Button variant="ghost" className="font-medium" asChild>
-              <Link href="/dashboard">Dashboard</Link>
-            </Button>
-            <Button variant="ghost" className="font-medium" asChild>
-              <Link href="/dashboard">Vault</Link>
-            </Button>
-            <Button variant="ghost" className="font-medium" asChild>
-              <Link href="/dashboard">Launch</Link>
-            </Button>
-          </div>
+            {/* Center Navigation Buttons */}
+            <div className="flex items-center justify-center gap-4">
+              <Button variant="ghost" className="font-medium border-2 border-border rounded-full px-6" asChild>
+                <Link href="/dashboard">Dashboard</Link>
+              </Button>
+              <Button variant="ghost" className="font-medium border-2 border-border rounded-full px-6" asChild>
+                <Link href="/swap">Swap</Link>
+              </Button>
+              <Button variant="ghost" className="font-medium border-2 border-border rounded-full px-6" asChild>
+                <Link href="/dashboard">Launch</Link>
+              </Button>
+            </div>
 
-          {/* Right Side: APT Balance & Wallet Address */}
-          <div className="flex items-center gap-4">
-            {walletAddress ? (
+            {/* Right Side: APT Balance & Wallet Address */}
+            <div className="flex items-center justify-end gap-4">
+            {isAuthenticated ? (
               <>
-                {/* APT Balance with Refresh */}
-                <div className="hidden sm:flex items-center gap-2 px-4 py-2 border-2 border-border bg-muted/50">
-                  <span className="text-sm font-mono font-semibold">{aptBalance} APT</span>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-6 w-6 p-0"
-                    onClick={() => fetchAptBalance()}
-                    title="Refresh balance"
-                  >
-                    ↻
-                  </Button>
-                </div>
+                {/* APT Balance with Refresh (only for Petra wallet) */}
+                {walletAddress && (
+                  <div className="hidden sm:flex items-center gap-2 px-4 py-2 border-2 border-border bg-muted/50 rounded-full">
+                    <span className="text-sm font-mono font-semibold">{aptBalance} APT</span>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-6 w-6 p-0"
+                      onClick={() => fetchAptBalance()}
+                      title="Refresh balance"
+                    >
+                      ↻
+                    </Button>
+                  </div>
+                )}
 
                 {/* Wallet Address (Display Only) */}
-                <div className="px-4 py-2 border-2 border-border bg-background font-mono text-sm">
-                  {String(walletAddress).slice(0, 6)}...{String(walletAddress).slice(-4)}
+                <div className="px-4 py-2 border-2 border-border bg-background font-mono text-sm rounded-full flex items-center gap-2">
+                  <span>{String(displayAddress).slice(0, 6)}...{String(displayAddress).slice(-4)}</span>
+                  {photonWallet && (
+                    <span className="text-xs text-muted-foreground">Photon</span>
+                  )}
                 </div>
 
                 {/* Disconnect Button */}
@@ -62,7 +127,14 @@ export default function Dashboard() {
                   variant="destructive"
                   size="sm"
                   className="border-2 shadow-sm"
-                  onClick={disconnectWallet}
+                  onClick={() => {
+                    if (walletAddress) {
+                      disconnectWallet();
+                    }
+                    if (photonWallet) {
+                      photonLogout();
+                    }
+                  }}
                 >
                   Disconnect
                 </Button>
@@ -79,19 +151,21 @@ export default function Dashboard() {
             )}
           </div>
         </div>
+      </div>
       </nav>
 
       {/* Dashboard Content */}
       <div className="container mx-auto px-6 py-12">
-        {walletAddress ? (
+        {isAuthenticated ? (
           <div className="space-y-8">
             {/* Welcome Section */}
             <div className="border-4 border-border bg-background/90 backdrop-blur-sm p-8 shadow-lg relative">
               <h1 className="text-4xl font-bold mb-2">
-                Welcome {username || (walletAddress ? `${String(walletAddress).slice(0, 6)}...${String(walletAddress).slice(-4)}` : 'Guest')}!
+                Welcome {username || (displayAddress ? `${String(displayAddress).slice(0, 6)}...${String(displayAddress).slice(-4)}` : 'Guest')}!
               </h1>
               <p className="text-muted-foreground">
                 Manage your DeFi portfolio with ease
+                {photonWallet && <span className="ml-2 text-primary font-semibold">🎮 Gamification Active</span>}
               </p>
             </div>
 
@@ -117,14 +191,28 @@ export default function Dashboard() {
             <div className="border-2 border-border bg-background/90 backdrop-blur-sm p-8 shadow-md">
               <h2 className="text-2xl font-bold mb-6">Quick Actions</h2>
               <div className="grid md:grid-cols-3 gap-4">
-                <Button className="border-2 shadow-sm" size="lg">
+                <Button 
+                  className="border-2 shadow-sm" 
+                  size="lg"
+                  onClick={handleVaultDeposit}
+                >
                   Deposit to Vault
                 </Button>
-                <Button className="border-2 shadow-sm" size="lg" variant="outline">
+                <Button 
+                  className="border-2 shadow-sm" 
+                  size="lg" 
+                  variant="outline"
+                  onClick={handleTokenLaunch}
+                >
                   Launch Token
                 </Button>
-                <Button className="border-2 shadow-sm" size="lg" variant="outline">
-                  Swap Tokens
+                <Button 
+                  className="border-2 shadow-sm" 
+                  size="lg" 
+                  variant="outline"
+                  onClick={handleStaking}
+                >
+                  Start Staking
                 </Button>
               </div>
             </div>

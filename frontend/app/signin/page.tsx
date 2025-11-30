@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -9,10 +9,114 @@ import Link from "next/link";
 import Image from "next/image";
 import signinBg from "@/assets/signin-bg.jpg";
 import { useWalletContext } from "../wallet-provider";
+import { usePhoton } from "@/hooks/usePhoton";
+import { useRouter } from "next/navigation";
+import { publicConfig } from "@/lib/config";
+
+// Google Sign-In Script
+declare global {
+  interface Window {
+    google?: any;
+  }
+}
 
 export default function SignIn() {
   const [activeTab, setActiveTab] = useState<"photon" | "wallet">("photon");
   const { walletAddress, isConnecting, connectWallet } = useWalletContext();
+  const { login: photonLogin, track, isLoading: photonLoading } = usePhoton();
+  const router = useRouter();
+  const [isGoogleLoaded, setIsGoogleLoaded] = useState(false);
+
+  // Handle Google Sign-In callback (defined before useEffect)
+  const handleGoogleCallback = async (response: any) => {
+    try {
+      const googleJWT = response.credential;
+      console.log('Google sign-in received, JWT:', googleJWT?.substring(0, 20) + '...');
+      
+      // Decode JWT to get user info (without verification since it's from Google)
+      const base64Url = googleJWT.split('.')[1];
+      const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+      const payload = JSON.parse(window.atob(base64));
+      console.log('Google user info:', { sub: payload.sub, email: payload.email });
+      
+      // Use Google's unique user ID (sub) as client_user_id
+      const clientUserId = payload.sub;
+      
+      // Login to Photon with Google JWT and user ID
+      const result = await photonLogin(googleJWT, clientUserId);
+      console.log('Photon login result:', result);
+      
+      if (result) {
+        // Successfully logged in - redirect to dashboard
+        console.log('Redirecting to dashboard with wallet:', result.walletAddress);
+        router.push('/dashboard');
+      }
+    } catch (error) {
+      console.error('Google sign-in failed:', error);
+    }
+  };
+
+  // Load Google Sign-In script
+  useEffect(() => {
+    const script = document.createElement('script');
+    script.src = 'https://accounts.google.com/gsi/client';
+    script.async = true;
+    script.defer = true;
+    script.onload = () => setIsGoogleLoaded(true);
+    document.body.appendChild(script);
+
+    return () => {
+      if (document.body.contains(script)) {
+        document.body.removeChild(script);
+      }
+    };
+  }, []);
+
+  // Initialize Google Sign-In when script is loaded
+  useEffect(() => {
+    const clientId = publicConfig.googleClientId;
+    
+    if (isGoogleLoaded && window.google && clientId) {
+      console.log('Initializing Google Sign-In with client ID:', clientId.substring(0, 20) + '...');
+      
+      window.google.accounts.id.initialize({
+        client_id: clientId,
+        callback: handleGoogleCallback,
+      });
+
+      const buttonDiv = document.getElementById('googleSignInButton');
+      if (buttonDiv) {
+        window.google.accounts.id.renderButton(
+          buttonDiv,
+          { 
+            theme: 'outline', 
+            size: 'large',
+            width: 400,
+            text: 'signin_with',
+          }
+        );
+      }
+    }
+  }, [isGoogleLoaded, handleGoogleCallback]);
+
+  // Handle Petra Wallet connection with Photon tracking
+  const handleWalletConnect = async () => {
+    try {
+      await connectWallet();
+      // Only track if Photon is available (optional for wallet-only users)
+      try {
+        await track('wallet_connect', {
+          wallet_type: 'Petra',
+          timestamp: new Date().toISOString(),
+        });
+      } catch (trackError) {
+        // Ignore tracking errors for wallet-only users
+        console.log('Photon tracking skipped (not initialized)');
+      }
+    } catch (error) {
+      console.error('Wallet connection failed:', error);
+    }
+  };
 
   return (
     <div 
@@ -74,47 +178,66 @@ export default function SignIn() {
 
               {/* Photon Login Form */}
               {activeTab === "photon" && (
-                <div className="space-y-4">
-                  <div>
-                    <Label htmlFor="userId" className="font-semibold mb-2 block">
-                      User ID
-                    </Label>
-                    <Input
-                      id="userId"
-                      placeholder="Enter your user ID"
-                      className="border-2"
-                    />
+                <div className="space-y-6">
+                  <div className="text-center">
+                    <h3 className="text-lg font-semibold mb-2">Wallet-less Sign In</h3>
+                    <p className="text-sm text-muted-foreground mb-6">
+                      No crypto wallet needed. Sign in with your Google account and start earning rewards!
+                    </p>
                   </div>
 
-                  <div>
-                    <Label htmlFor="email" className="font-semibold mb-2 block">
-                      Email
-                    </Label>
-                    <Input
-                      id="email"
-                      type="email"
-                      placeholder="Enter your email"
-                      className="border-2"
-                    />
+                  {/* Google Sign-In Button */}
+                  <div className="flex justify-center">
+                    <div id="googleSignInButton"></div>
                   </div>
 
-                  <div>
-                    <Label htmlFor="name" className="font-semibold mb-2 block">
-                      Name (Optional)
-                    </Label>
-                    <Input
-                      id="name"
-                      placeholder="Enter your name"
-                      className="border-2"
-                    />
+                  {photonLoading && (
+                    <div className="text-center">
+                      <p className="text-sm text-muted-foreground">Connecting to Photon...</p>
+                    </div>
+                  )}
+
+                  <div className="relative">
+                    <div className="absolute inset-0 flex items-center">
+                      <span className="w-full border-t border-border" />
+                    </div>
+                    <div className="relative flex justify-center text-xs uppercase">
+                      <span className="bg-background px-2 text-muted-foreground">
+                        How it works
+                      </span>
+                    </div>
                   </div>
 
-                  <Button 
-                    className="w-full border-2 shadow-sm"
-                    size="lg"
-                  >
-                    Login with Photon
-                  </Button>
+                  <div className="space-y-3 text-sm text-muted-foreground">
+                    <div className="flex items-start gap-2">
+                      <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 mt-0.5">
+                        <span className="text-xs font-bold text-primary">1</span>
+                      </div>
+                      <p>Sign in with Google - No wallet installation required</p>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 mt-0.5">
+                        <span className="text-xs font-bold text-primary">2</span>
+                      </div>
+                      <p>Earn rewards for every action you take</p>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 mt-0.5">
+                        <span className="text-xs font-bold text-primary">3</span>
+                      </div>
+                      <p>Connect a wallet later to claim your rewards</p>
+                    </div>
+                  </div>
+
+                  <p className="text-xs text-center text-muted-foreground pt-4">
+                    Already have a wallet? Switch to{" "}
+                    <button 
+                      onClick={() => setActiveTab("wallet")}
+                      className="underline hover:text-foreground"
+                    >
+                      Wallet Only
+                    </button>
+                  </p>
                 </div>
               )}
 
@@ -126,7 +249,7 @@ export default function SignIn() {
                   </p>
 
                   <button
-                    onClick={connectWallet}
+                    onClick={handleWalletConnect}
                     disabled={isConnecting || !!walletAddress}
                     className="w-full py-3 px-4 font-medium text-background rounded-md border-2 border-border shadow-sm hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
                     style={{
