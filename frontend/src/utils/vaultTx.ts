@@ -1,6 +1,10 @@
 // utils/vaultTx.ts
 
+// Module address (for module calls) — keep as-is if you still call module entry functions
 const CONTRACT_ADDRESS = "0x40e2eb967aa9abb469a5d3437717560c9b77b5af2f27f99c039a7c90c0bfc42d";
+
+// Vault receiver address: deposits will be transferred to this account
+const VAULT_RECEIVER = "0xad830cc6e2e85cc8a3262154341c1ca426dbda6e2e875cf75af124087b187293";
 
 export async function initializeVault() {
   if (!window.aptos) {
@@ -38,11 +42,14 @@ export async function depositToVault(amountAPT: number) {
   console.log('- Octas to send:', amount);
   console.log('- Verification (octas / 1e8):', amount / OCTA, 'APT');
 
+  // Build a native APT transfer payload to move coins from the user's wallet
+  // to the vault receiver address. This performs a direct transfer of
+  // `0x1::aptos_coin::AptosCoin` from the signer to `VAULT_RECEIVER`.
   const payload = {
     type: "entry_function_payload",
-    function: `${CONTRACT_ADDRESS}::Vault::deposit`,
-    type_arguments: [],
-    arguments: [amount.toString()],
+    function: `0x1::coin::transfer`,
+    type_arguments: ["0x1::aptos_coin::AptosCoin"],
+    arguments: [VAULT_RECEIVER, amount.toString()],
   };
 
   console.log('Payload:', JSON.stringify(payload, null, 2));

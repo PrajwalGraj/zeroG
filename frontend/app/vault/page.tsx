@@ -400,6 +400,7 @@ export default function VaultPage() {
       type: p.volatility < 1 ? "stable" : "concentrated",
       feeTier: 0.01,
       score: p.score,
+      dex: p.dex || p.source || "unknown",
     };
   }) || [];
 
@@ -466,7 +467,7 @@ export default function VaultPage() {
   const handleEnterVault = async (vault: Vault) => {
     setSelectedVault(vault);
     try {
-      await track("vault_view", {
+      await track("vault_view" as any, {
         vault_id: vault.id,
         vault_name: vault.name,
         vault_type: vault.type,

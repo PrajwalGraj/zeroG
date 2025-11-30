@@ -44,6 +44,7 @@ export interface Pool {
   type: "stable" | "concentrated" | "metastable";
   feeTier: number;
   score?: number;
+  dex?: string;
 }
 
 const tokenLogos: Record<string, string> = {
@@ -224,6 +225,11 @@ export const PoolsTable = ({
                           {pool.type.charAt(0).toUpperCase() + pool.type.slice(1)}
                         </Badge>
                         <span>{(pool.feeTier * 100).toFixed(2)}%</span>
+                        {pool.dex && (
+                          <span className="ml-2 px-2 py-0.5 rounded-full bg-muted text-[11px] font-medium text-muted-foreground">
+                            {String(pool.dex).charAt(0).toUpperCase() + String(pool.dex).slice(1)}
+                          </span>
+                        )}
                       </div>
                     </div>
                   </div>
