@@ -39,6 +39,11 @@ module zerog::Vault {
     // INIT
     //
     public entry fun init(admin: &signer) {
+        // Register to receive APT coins
+        if (!coin::is_account_registered<AptosCoin>(@zerog)) {
+            coin::register<AptosCoin>(admin);
+        };
+        
         move_to(admin, VaultData {
             total_balance: 0,
             // create an empty table

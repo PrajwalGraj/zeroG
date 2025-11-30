@@ -81,11 +81,15 @@ export function usePhoton() {
         body: JSON.stringify({ jwt, clientUserId: userIdToUse }),
       });
 
+      const responseData = await response.json();
+      console.log('Photon login response:', responseData);
+
       if (!response.ok) {
-        throw new Error('Failed to login to Photon');
+        console.error('Photon login failed:', responseData);
+        throw new Error(responseData.error || 'Failed to login to Photon');
       }
 
-      const data = await response.json();
+      const data = responseData;
 
       setState({
         photonToken: data.accessToken,

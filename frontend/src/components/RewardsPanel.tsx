@@ -39,10 +39,16 @@ export default function RewardsPanel() {
   const [copied, setCopied] = useState(false);
   const [rewardAnimation, setRewardAnimation] = useState(false);
   const previousRewardsRef = useRef<RewardData | null>(null);
+  const [referralLink, setReferralLink] = useState('');
 
-  const referralLink = photonWallet 
-    ? `${window.location.origin}/signin?ref=${photonWallet}`
-    : '';
+  // Generate referral link on client side
+  useEffect(() => {
+    if (photonWallet && typeof window !== 'undefined') {
+      setReferralLink(`${window.location.origin}/signin?ref=${photonWallet}`);
+    } else {
+      setReferralLink('');
+    }
+  }, [photonWallet]);
 
   // Fetch rewards
   useEffect(() => {

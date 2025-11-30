@@ -12,7 +12,7 @@ compiled_package_info:
     vm: "0000000000000000000000000000000000000000000000000000000000000000"
     vm_reserved: "0000000000000000000000000000000000000000000000000000000000000000"
     zerog: 40e2eb967aa9abb469a5d3437717560c9b77b5af2f27f99c039a7c90c0bfc42d
-  source_digest: B4F007F6F42D7441ECC34131ABFF754E38DB549D24BEF50C90E9CD2EAFAF91DE
+  source_digest: DAA2B5C0505A6831991E43AC7F7874D359E0170C30E759A93891F3AF628B23BF
   build_flags:
     dev_mode: false
     test_mode: false
@@ -23,7 +23,8 @@ compiled_package_info:
     full_model_generation: true
     install_dir: ~
     force_recompilation: false
-    additional_named_addresses: {}
+    additional_named_addresses:
+      zerog: 40e2eb967aa9abb469a5d3437717560c9b77b5af2f27f99c039a7c90c0bfc42d
     fetch_deps_only: false
     skip_fetch_latest_git_deps: false
     compiler_config:

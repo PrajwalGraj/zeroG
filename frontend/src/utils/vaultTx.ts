@@ -30,8 +30,13 @@ export async function depositToVault(amountAPT: number) {
     throw new Error("Petra wallet not found. Please install Petra wallet extension.");
   }
 
-  const OCTA = 100_000_000; // 1 APT = 1e8
+  const OCTA = 100_000_000; // 1 APT = 1e8 octas
   const amount = Math.floor(amountAPT * OCTA);
+
+  console.log('Deposit Details:');
+  console.log('- Input APT:', amountAPT);
+  console.log('- Octas to send:', amount);
+  console.log('- Verification (octas / 1e8):', amount / OCTA, 'APT');
 
   const payload = {
     type: "entry_function_payload",
@@ -39,6 +44,8 @@ export async function depositToVault(amountAPT: number) {
     type_arguments: [],
     arguments: [amount.toString()],
   };
+
+  console.log('Payload:', JSON.stringify(payload, null, 2));
 
   try {
     const tx = await window.aptos.signAndSubmitTransaction({ payload });
