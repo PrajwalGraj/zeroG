@@ -87,6 +87,9 @@ export default function Dashboard() {
                 <Link href="/dashboard">Dashboard</Link>
               </Button>
               <Button variant="ghost" className="font-medium border-2 border-border rounded-full px-6" asChild>
+                <Link href="/vault">Vault</Link>
+              </Button>
+              <Button variant="ghost" className="font-medium border-2 border-border rounded-full px-6" asChild>
                 <Link href="/swap">Swap</Link>
               </Button>
               <Button variant="ghost" className="font-medium border-2 border-border rounded-full px-6" asChild>
